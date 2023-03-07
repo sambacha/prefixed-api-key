@@ -51,9 +51,7 @@ export function extractShortToken(token: string) {
   return token.split("_").slice(-2, -1)?.[0]
 }
 
-export async function generateAPIKey(
-  options: GenerateAPIKeyOptions
-): Promise<APIKey> {
+export function generateAPIKey(options: GenerateAPIKeyOptions): APIKey {
   if (!options) {
     throw new Error("options object is required")
   }

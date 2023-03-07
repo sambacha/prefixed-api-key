@@ -19,7 +19,7 @@ declare module "vitest" {
 
 describe("function", () => {
   beforeEach(async (context) => {
-    context.key = await generateAPIKey({ keyPrefix: "my_company" })
+    context.key = generateAPIKey({ keyPrefix: "my_company" })
   })
 
   describe("generateAPIKey", () => {
@@ -34,7 +34,7 @@ describe("function", () => {
     })
 
     test("should accept and validate keyPrefix arg with chars [a-z0-9_]", async (context) => {
-      const key = await generateAPIKey({ keyPrefix: "my_company_1_2_three" })
+      const key = generateAPIKey({ keyPrefix: "my_company_1_2_three" })
 
       expect(key).not.toBeNull()
       expect(key).toHaveProperty("longToken")
@@ -45,7 +45,7 @@ describe("function", () => {
     })
 
     test("should accept and validate shortTokenPrefix arg with chars [a-z0-9]", async (context) => {
-      const key = await generateAPIKey({
+      const key = generateAPIKey({
         keyPrefix: "my_company",
         shortTokenPrefix: "myprefix123",
       })
@@ -57,7 +57,7 @@ describe("function", () => {
     })
 
     test("should accept and validate shortTokenLength arg with 4", async (context) => {
-      const key = await generateAPIKey({
+      const key = generateAPIKey({
         keyPrefix: "my_company",
         shortTokenLength: 4,
       })
@@ -69,7 +69,7 @@ describe("function", () => {
     })
 
     test("should accept and validate shortTokenLength arg with 24", async (context) => {
-      const key = await generateAPIKey({
+      const key = generateAPIKey({
         keyPrefix: "my_company",
         shortTokenLength: 24,
       })
@@ -81,7 +81,7 @@ describe("function", () => {
     })
 
     test("should accept and validate longTokenLength arg with 4", async (context) => {
-      const key = await generateAPIKey({
+      const key = generateAPIKey({
         keyPrefix: "my_company",
         longTokenLength: 4,
       })
@@ -93,7 +93,7 @@ describe("function", () => {
     })
 
     test("should accept and validate longTokenLength arg with 24", async (context) => {
-      const key = await generateAPIKey({
+      const key = generateAPIKey({
         keyPrefix: "my_company",
         longTokenLength: 24,
       })
@@ -106,14 +106,14 @@ describe("function", () => {
 
     test("should throw if no object arg is provided", async (context) => {
       // @ts-expect-error
-      expect(async () => await generateAPIKey()).rejects.toThrowError(
+      expect(async () => generateAPIKey()).rejects.toThrowError(
         "options object is required"
       )
     })
 
     test("should throw if keyPrefix arg is missing", async (context) => {
       // @ts-expect-error
-      expect(async () => await generateAPIKey({})).rejects.toThrowError(
+      expect(async () => generateAPIKey({})).rejects.toThrowError(
         "keyPrefix is required"
       )
     })
@@ -121,23 +121,22 @@ describe("function", () => {
     test("should throw if keyPrefix arg is not a string", async (context) => {
       expect(
         // @ts-expect-error
-        async () => await generateAPIKey({ keyPrefix: 1 })
+        async () => generateAPIKey({ keyPrefix: 1 })
       ).rejects.toThrowError("keyPrefix is required")
     })
 
     test("should throw if keyPrefix has an invalid character", async (context) => {
-      expect(
-        async () => await generateAPIKey({ keyPrefix: "foo*bar" })
+      expect(async () =>
+        generateAPIKey({ keyPrefix: "foo*bar" })
       ).rejects.toThrowError("keyPrefix is required")
     })
 
     test("should throw if shortTokenPrefix has an invalid character", async (context) => {
-      expect(
-        async () =>
-          await generateAPIKey({
-            keyPrefix: "my_company",
-            shortTokenPrefix: "foo*bar",
-          })
+      expect(async () =>
+        generateAPIKey({
+          keyPrefix: "my_company",
+          shortTokenPrefix: "foo*bar",
+        })
       ).rejects.toThrowError(
         "shortTokenPrefix must only contain lowercase letters and numbers"
       )
@@ -148,31 +147,29 @@ describe("function", () => {
       expect(
         async () =>
         // @ts-ignore-error
-        await generateAPIKey({ keyPrefix: "my_company", shortTokenLength: "1" })
+        generateAPIKey({ keyPrefix: "my_company", shortTokenLength: "1" })
       ).rejects.toThrowError(
         "shortTokenLength must be a number between 4 and 24"
       )
     })
 
     test("should throw if shortTokenLength is < 4", async (context) => {
-      expect(
-        async () =>
-          await generateAPIKey({
-            keyPrefix: "my_company",
-            shortTokenLength: 3,
-          })
+      expect(async () =>
+        generateAPIKey({
+          keyPrefix: "my_company",
+          shortTokenLength: 3,
+        })
       ).rejects.toThrowError(
         "shortTokenLength must be a number between 4 and 24"
       )
     })
 
     test("should throw if shortTokenLength is > 24", async (context) => {
-      expect(
-        async () =>
-          await generateAPIKey({
-            keyPrefix: "my_company",
-            shortTokenLength: 25,
-          })
+      expect(async () =>
+        generateAPIKey({
+          keyPrefix: "my_company",
+          shortTokenLength: 25,
+        })
       ).rejects.toThrowError(
         "shortTokenLength must be a number between 4 and 24"
       )
@@ -183,31 +180,29 @@ describe("function", () => {
       expect(
         async () =>
         // @ts-ignore-error
-        await generateAPIKey({ keyPrefix: "my_company", longTokenLength: "1" })
+        generateAPIKey({ keyPrefix: "my_company", longTokenLength: "1" })
       ).rejects.toThrowError(
         "longTokenLength must be a number between 4 and 24"
       )
     })
 
     test("should throw if longTokenLength is < 4", async (context) => {
-      expect(
-        async () =>
-          await generateAPIKey({
-            keyPrefix: "my_company",
-            longTokenLength: 3,
-          })
+      expect(async () =>
+        generateAPIKey({
+          keyPrefix: "my_company",
+          longTokenLength: 3,
+        })
       ).rejects.toThrowError(
         "longTokenLength must be a number between 4 and 24"
       )
     })
 
     test("should throw if longTokenLength is > 24", async (context) => {
-      expect(
-        async () =>
-          await generateAPIKey({
-            keyPrefix: "my_company",
-            longTokenLength: 25,
-          })
+      expect(async () =>
+        generateAPIKey({
+          keyPrefix: "my_company",
+          longTokenLength: 25,
+        })
       ).rejects.toThrowError(
         "longTokenLength must be a number between 4 and 24"
       )
