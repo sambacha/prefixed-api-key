@@ -1,8 +1,8 @@
-import { randomBytes, createHash } from "node:crypto"
-import { promisify } from "node:util"
+import { createHash } from "node:crypto"
 import bs58 from "bs58"
 import padStart from "lodash/padStart"
 import { equal } from "@stablelib/constant-time"
+import { randomBytes } from "@stablelib/random"
 
 export interface GenerateAPIKeyOptions {
   keyPrefix: string
@@ -98,12 +98,9 @@ export async function generateAPIKey(
     throw new Error("longTokenLength must be a number between 4 and 24")
   }
 
-  const generatedRandomBytes = promisify(randomBytes)
-  const [shortTokenBytes, longTokenBytes] = await Promise.all([
-    // you need ~0.732 * length bytes, but it's fine to have more bytes
-    generatedRandomBytes(shortTokenLength ?? 8), // default to 8
-    generatedRandomBytes(longTokenLength ?? 24), // default to 24
-  ])
+  // You need ~0.732 * length bytes, but it's fine to have more bytes
+  const shortTokenBytes = randomBytes(shortTokenLength ?? 8) // default to 8
+  const longTokenBytes = randomBytes(longTokenLength ?? 24) // default to 24
 
   let shortToken = padStart(
     bs58.encode(shortTokenBytes),
