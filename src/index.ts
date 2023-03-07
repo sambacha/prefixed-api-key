@@ -1,8 +1,9 @@
-import { createHash } from "node:crypto"
 import bs58 from "bs58"
 import padStart from "lodash/padStart"
 import { equal } from "@stablelib/constant-time"
 import { randomBytes } from "@stablelib/random"
+import { hash } from "@stablelib/sha256"
+import { encode } from "@stablelib/hex"
 
 export interface GenerateAPIKeyOptions {
   keyPrefix: string
@@ -144,5 +145,6 @@ export function getTokenComponents(token: string) {
 }
 
 export function hashLongToken(longToken: string) {
-  return createHash("sha256").update(longToken).digest("hex")
+  const hashedLongToken = hash(new TextEncoder().encode(longToken))
+  return encode(hashedLongToken, true) // true = lowercase
 }

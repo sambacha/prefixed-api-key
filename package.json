@@ -13,9 +13,10 @@
   },
   "devDependencies": {
     "@stablelib/constant-time": "^1.0.1",
+    "@stablelib/hex": "^1.0.1",
     "@stablelib/random": "^1.0.2",
+    "@stablelib/sha256": "^1.0.1",
     "@types/lodash": "^4.14.191",
-    "@types/node": "^17.0.32",
     "@vitest/coverage-c8": "^0.29.2",
     "esbuild": "^0.17.11",
     "esbuild-register": "^3.4.2",
