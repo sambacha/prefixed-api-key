@@ -12,6 +12,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "devDependencies": {
+    "@stablelib/constant-time": "^1.0.1",
     "@types/lodash": "^4.14.191",
     "@types/node": "^17.0.32",
     "@vitest/coverage-c8": "^0.29.2",

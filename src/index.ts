@@ -2,6 +2,7 @@ import { randomBytes, createHash } from "node:crypto"
 import { promisify } from "node:util"
 import bs58 from "bs58"
 import padStart from "lodash/padStart"
+import { equal } from "@stablelib/constant-time"
 
 export interface GenerateAPIKeyOptions {
   keyPrefix: string
@@ -21,7 +22,14 @@ export function checkAPIKey(
   token: string,
   expectedLongTokenHash: string
 ): boolean {
-  return hashLongToken(extractLongToken(token)) === expectedLongTokenHash
+  const hashedLongTokenUint8Array = new TextEncoder().encode(
+    hashLongToken(extractLongToken(token))
+  )
+  const expectedLongTokenHashUint8Array = new TextEncoder().encode(
+    expectedLongTokenHash
+  )
+
+  return equal(hashedLongTokenUint8Array, expectedLongTokenHashUint8Array)
 }
 
 export function extractLongToken(token: string) {
