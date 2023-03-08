@@ -65,7 +65,7 @@ export function generateAPIKey(options: GenerateAPIKeyOptions): APIKey {
     !/^[a-z0-9_]+$/.test(keyPrefix)
   ) {
     throw new Error(
-      "keyPrefix is required and must only contain lowercase letters and numbers (a-z), or underscore (_)"
+      "keyPrefix is required and must only contain lowercase letters and numbers (a-z0-9), or underscore (_)"
     )
   }
 
@@ -75,7 +75,7 @@ export function generateAPIKey(options: GenerateAPIKeyOptions): APIKey {
       !/^[a-z0-9]+$/.test(shortTokenPrefix))
   ) {
     throw new Error(
-      "shortTokenPrefix must only contain lowercase letters and numbers"
+      "shortTokenPrefix must only contain lowercase letters and numbers (a-z0-9)"
     )
   }
 
