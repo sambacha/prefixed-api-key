@@ -10,6 +10,7 @@ import {
   generateAPIKey,
   getTokenComponents,
   hashLongToken,
+  parseToken,
 } from "../src/index"
 
 declare module "vitest" {
@@ -21,6 +22,69 @@ declare module "vitest" {
 describe("function", () => {
   beforeEach(async (context) => {
     context.key = generateAPIKey({ keyPrefix: "my_company" })
+  })
+
+  describe("parseToken", () => {
+    test("should return object with key properties", async (context) => {
+      const { key } = context
+
+      const parsedKey = parseToken(key.token)
+
+      expect(parsedKey).not.toBeNull()
+      expect(parsedKey).toHaveProperty("longToken")
+      expect(parsedKey).toHaveProperty("longTokenHash")
+      expect(parsedKey).toHaveProperty("prefix")
+      expect(parsedKey).toHaveProperty("shortToken")
+      expect(parsedKey).toHaveProperty("token")
+    })
+
+    test("should throw if token arg is not a string", async (context) => {
+      expect(
+        // @ts-expect-error
+        async () => parseToken(undefined)
+      ).rejects.toThrowError("Invalid token : must be a string : undefined")
+    })
+
+    test("should throw if too few segments", async (context) => {
+      const { key } = context
+
+      expect(async () =>
+        parseToken(key.token.replace(/my_company_/g, ""))
+      ).rejects.toThrowError("Invalid token : too few segments : 2")
+    })
+
+    test("should throw if too many segments", async (context) => {
+      const { key } = context
+
+      expect(async () =>
+        parseToken(
+          key.token.replace(
+            /my_company_/g,
+            "foo_bar_baz_qux_abc_123_456_8910_zxc_"
+          )
+        )
+      ).rejects.toThrowError("Invalid token : too many segments : 11")
+    })
+
+    test("should throw if token is not strict Base 58", async (context) => {
+      const { key } = context
+
+      expect(async () =>
+        parseToken(
+          key.token + "!" // add invalid char
+        )
+      ).rejects.toThrowError(
+        "Invalid token : longToken is not a valid base58 string"
+      )
+    })
+
+    test("should throw if shortToken contains an invalid character", async (context) => {
+      const { key } = context
+
+      expect(async () =>
+        parseToken("my_company_BRTR***KFsL_51FwqftsmMDHHbJAMEXXHCgG")
+      ).rejects.toThrowError("Invalid token : shortToken is not a valid string")
+    })
   })
 
   describe("generateAPIKey", () => {
@@ -139,7 +203,7 @@ describe("function", () => {
           shortTokenPrefix: "foo*bar",
         })
       ).rejects.toThrowError(
-        "shortTokenPrefix must only contain lowercase letters and numbers"
+        "shortTokenPrefix must contain no more than 16 lowercase letter or number characters"
       )
     })
 
@@ -183,7 +247,7 @@ describe("function", () => {
         // @ts-ignore-error
         generateAPIKey({ keyPrefix: "my_company", longTokenLength: "1" })
       ).rejects.toThrowError(
-        "longTokenLength must be a number between 4 and 24"
+        "longTokenLength must be a number between 4 and 24 : 1"
       )
     })
 
@@ -194,7 +258,7 @@ describe("function", () => {
           longTokenLength: 3,
         })
       ).rejects.toThrowError(
-        "longTokenLength must be a number between 4 and 24"
+        "longTokenLength must be a number between 4 and 24 : 3"
       )
     })
 
@@ -205,7 +269,7 @@ describe("function", () => {
           longTokenLength: 25,
         })
       ).rejects.toThrowError(
-        "longTokenLength must be a number between 4 and 24"
+        "longTokenLength must be a number between 4 and 24 : 25"
       )
     })
   })
@@ -217,10 +281,12 @@ describe("function", () => {
       expect(checkAPIKey(key.token, key.longTokenHash)).toEqual(true)
     })
 
-    test("should return false if long token hash does not match", async (context) => {
+    test("should throw if long token hash does not match", async (context) => {
       const { key } = context
 
-      expect(checkAPIKey(key.token, "foo")).toEqual(false)
+      expect(async () => checkAPIKey(key.token, "foo")).rejects.toThrowError(
+        "Invalid expectedLongTokenHash : not a valid hex string : foo"
+      )
     })
   })
 
@@ -261,6 +327,7 @@ describe("function", () => {
         longToken: "51FwqftsmMDHHbJAMEXXHCgG",
         longTokenHash:
           "d70d981d87b449c107327c2a2afbf00d4b58070d6ba571aac35d7ea3e7c79f37",
+        prefix: "my_company",
         token: "my_company_BRTRKFsL_51FwqftsmMDHHbJAMEXXHCgG",
       }
 
@@ -273,6 +340,14 @@ describe("function", () => {
       const { key } = context
 
       expect(hashLongToken(key.longToken)).toEqual(key.longTokenHash)
+    })
+
+    test("should throw if longToken contains an invalid character", async (context) => {
+      const { key } = context
+
+      expect(
+        async () => hashLongToken(key.longToken + "!") // add invalid character
+      ).rejects.toThrowError("Invalid longToken")
     })
   })
 })

@@ -13,42 +13,133 @@ export interface GenerateAPIKeyOptions {
 }
 
 export interface APIKey {
-  shortToken: string
   longToken: string
   longTokenHash: string
+  prefix: string
+  shortToken: string
   token: string
+}
+
+// Alphabet used for base58 encoding
+// 123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz
+// See : https://www.npmjs.com/package/base-x
+export const BASE_58_REGEX = /^[1-9A-HJ-NP-Za-km-z]+$/
+
+export const HEX_REGEX = /^[0-9a-f]+$/
+
+export const PREFIX_MIN_LENGTH = 1
+
+export const PREFIX_MAX_LENGTH = 64
+
+export const SHORT_TOKEN_MIN_BYTES = 4
+
+export const SHORT_TOKEN_DEFAULT_BYTES = 8
+
+export const SHORT_TOKEN_MAX_BYTES = 24
+
+export const LONG_TOKEN_MIN_BYTES = 4
+
+export const LONG_TOKEN_DEFAULT_BYTES = 24
+
+export const LONG_TOKEN_MAX_BYTES = 24
+
+export const PREFIX_REGEX = /^[a-z0-9_]{1,64}$/
+
+export const SHORT_TOKEN_PREFIX_REGEX = /^[a-z0-9]{1,16}$/
+
+export const SHORT_TOKEN_REGEX = /^[a-zA-Z0-9]+$/
+
+export const TOKEN_SEGMENTS_MIN_LENGTH = 3
+
+export const TOKEN_SEGMENTS_MAX_LENGTH = 10
+
+// Split and validate a token, returning an object
+// with all sub-components present and valid.
+export function parseToken(token: string): APIKey {
+  if (!token || typeof token !== "string") {
+    throw new Error(`Invalid token : must be a string : ${typeof token}`)
+  }
+
+  const splitToken = token.split("_")
+  const splitTokenLength = splitToken.length
+
+  if (splitTokenLength < TOKEN_SEGMENTS_MIN_LENGTH) {
+    throw new Error(`Invalid token : too few segments : ${splitTokenLength}`)
+  }
+
+  if (splitTokenLength > TOKEN_SEGMENTS_MAX_LENGTH) {
+    throw new Error(`Invalid token : too many segments : ${splitTokenLength}`)
+  }
+
+  const longToken = splitToken[splitTokenLength - 1]
+
+  // Check that the longToken is a valid base58 string
+  if (!BASE_58_REGEX.test(longToken)) {
+    throw new Error(
+      `Invalid token : longToken is not a valid base58 string : ${longToken}`
+    )
+  }
+
+  const longTokenHash = hashLongToken(longToken)
+
+  const shortToken = splitToken[splitTokenLength - 2]
+
+  // Check that the shortToken is a valid base58 string
+  if (!SHORT_TOKEN_REGEX.test(shortToken)) {
+    throw new Error(
+      `Invalid token : shortToken is not a valid string : ${shortToken}`
+    )
+  }
+
+  // Reconstruct the entire prefix
+  const prefix = splitToken.slice(0, splitTokenLength - 2).join("_")
+
+  return {
+    longToken,
+    longTokenHash,
+    prefix,
+    shortToken,
+    token: `${prefix}_${shortToken}_${longToken}`,
+  }
 }
 
 export function checkAPIKey(
   token: string,
   expectedLongTokenHash: string
 ): boolean {
+  const parsedToken = parseToken(token)
+
+  if (!HEX_REGEX.test(expectedLongTokenHash)) {
+    throw new Error(
+      `Invalid expectedLongTokenHash : not a valid hex string : ${expectedLongTokenHash}`
+    )
+  }
+
   const hashedLongTokenUint8Array = new TextEncoder().encode(
-    hashLongToken(extractLongToken(token))
+    hashLongToken(parsedToken.longToken)
   )
+
   const expectedLongTokenHashUint8Array = new TextEncoder().encode(
     expectedLongTokenHash
   )
 
+  // constant-time comparison
   return equal(hashedLongTokenUint8Array, expectedLongTokenHashUint8Array)
 }
 
 export function extractLongToken(token: string) {
-  // Work backwards from the end of the token so we can handle tokens with
-  // multiple underscores in the prefix. Split the token on '_'
-  // and return the last item.
-  return token.split("_").slice(-1)?.[0]
+  const parsedToken = parseToken(token)
+  return parsedToken.longToken
 }
 
 export function extractLongTokenHash(token: string) {
-  return hashLongToken(extractLongToken(token))
+  const parsedToken = parseToken(token)
+  return parsedToken.longTokenHash
 }
 
 export function extractShortToken(token: string) {
-  // Work backwards from the end of the token so we can handle tokens with
-  // multiple underscores in the prefix. Split the token on '_'
-  // and return the second to last item.
-  return token.split("_").slice(-2, -1)?.[0]
+  const parsedToken = parseToken(token)
+  return parsedToken.shortToken
 }
 
 export function generateAPIKey(options: GenerateAPIKeyOptions): APIKey {
@@ -62,44 +153,52 @@ export function generateAPIKey(options: GenerateAPIKeyOptions): APIKey {
   if (
     !keyPrefix ||
     typeof keyPrefix !== "string" ||
-    !/^[a-z0-9_]+$/.test(keyPrefix)
+    !PREFIX_REGEX.test(keyPrefix)
   ) {
     throw new Error(
-      "keyPrefix is required and must only contain lowercase letters and numbers (a-z0-9), or underscore (_)"
+      "keyPrefix is required and must contain no more than 64 lowercase letter, number, or underscore (_) characters"
     )
   }
 
   if (
     shortTokenPrefix &&
     (typeof shortTokenPrefix !== "string" ||
-      !/^[a-z0-9]+$/.test(shortTokenPrefix))
+      !SHORT_TOKEN_PREFIX_REGEX.test(shortTokenPrefix))
   ) {
     throw new Error(
-      "shortTokenPrefix must only contain lowercase letters and numbers (a-z0-9)"
+      "shortTokenPrefix must contain no more than 16 lowercase letter or number characters"
     )
   }
 
   if (
     shortTokenLength &&
     (typeof shortTokenLength !== "number" ||
-      shortTokenLength < 4 ||
-      shortTokenLength > 24)
+      shortTokenLength < SHORT_TOKEN_MIN_BYTES ||
+      shortTokenLength > SHORT_TOKEN_MAX_BYTES)
   ) {
-    throw new Error("shortTokenLength must be a number between 4 and 24")
+    throw new Error(
+      `shortTokenLength must be a number between ${SHORT_TOKEN_MIN_BYTES} and ${SHORT_TOKEN_MAX_BYTES} : ${shortTokenLength}`
+    )
   }
 
   if (
     longTokenLength &&
     (typeof longTokenLength !== "number" ||
-      longTokenLength < 4 ||
-      longTokenLength > 24)
+      longTokenLength < LONG_TOKEN_MIN_BYTES ||
+      longTokenLength > LONG_TOKEN_MAX_BYTES)
   ) {
-    throw new Error("longTokenLength must be a number between 4 and 24")
+    throw new Error(
+      `longTokenLength must be a number between ${LONG_TOKEN_MIN_BYTES} and ${LONG_TOKEN_MAX_BYTES} : ${longTokenLength}`
+    )
   }
 
   // You need ~0.732 * length bytes, but it's fine to have more bytes
-  const shortTokenBytes = randomBytes(shortTokenLength ?? 8) // default to 8
-  const longTokenBytes = randomBytes(longTokenLength ?? 24) // default to 24
+  const shortTokenBytes = randomBytes(
+    shortTokenLength ?? SHORT_TOKEN_DEFAULT_BYTES
+  )
+  const longTokenBytes = randomBytes(
+    longTokenLength ?? LONG_TOKEN_DEFAULT_BYTES
+  )
 
   let shortToken = padStart(
     bs58.encode(shortTokenBytes),
@@ -125,6 +224,7 @@ export function generateAPIKey(options: GenerateAPIKeyOptions): APIKey {
   const apiKey: APIKey = {
     longToken,
     longTokenHash,
+    prefix: keyPrefix,
     shortToken,
     token,
   }
@@ -133,16 +233,18 @@ export function generateAPIKey(options: GenerateAPIKeyOptions): APIKey {
 }
 
 export function getTokenComponents(token: string) {
-  const longToken = extractLongToken(token)
-  return {
-    longToken,
-    shortToken: extractShortToken(token),
-    longTokenHash: hashLongToken(longToken),
-    token,
-  }
+  return parseToken(token)
 }
 
 export function hashLongToken(longToken: string) {
+  if (
+    !longToken ||
+    typeof longToken !== "string" ||
+    !BASE_58_REGEX.test(longToken)
+  ) {
+    throw new Error(`Invalid longToken : ${longToken}`)
+  }
+
   const hashedLongToken = hash(new TextEncoder().encode(longToken))
-  return encode(hashedLongToken, true) // true = lowercase
+  return encode(hashedLongToken, true) // true = lowercase hex
 }
