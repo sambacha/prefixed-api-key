@@ -97,3 +97,9 @@ checkAPIKey(
 )
 // true
 ```
+
+## Is it fast?
+
+Try `npm run bench`
+
+On a 2019 laptop it can do `~70,000` `generateAPIKey()` calls per second and about `~109,000` `checkAPIKey()` calls per second.

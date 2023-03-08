@@ -68,6 +68,7 @@
   "name": "prefixed-api-key",
   "repository": "git@github.com:seamapi/prefixed-api-key.git",
   "scripts": {
+    "bench": "vitest bench",
     "build": "tsup src/index.ts --clean --format esm,cjs --dts",
     "clean": "rm -rf dist",
     "examples:deno": "cd examples/deno && deno run ./index.ts",
