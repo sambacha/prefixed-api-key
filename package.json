@@ -1,31 +1,69 @@
 {
-  "name": "prefixed-api-key",
-  "version": "1.1.0",
-  "main": "dist/index.js",
-  "license": "MIT",
   "description": "Generate seam-style API-keys",
-  "repository": "git@github.com:seamapi/prefixed-api-key.git",
-  "scripts": {
-    "build": "tsup --dts --clean -d dist src",
-    "test": "vitest run",
-    "test:watch": "vitest --coverage",
-    "test:coverage": "vitest run --coverage"
-  },
   "devDependencies": {
+    "@skypack/package-check": "^0.2.2",
     "@stablelib/constant-time": "^1.0.1",
     "@stablelib/hex": "^1.0.1",
     "@stablelib/random": "^1.0.2",
     "@stablelib/sha256": "^1.0.1",
     "@types/lodash": "^4.14.191",
+    "@typescript-eslint/eslint-plugin": "^5.54.1",
+    "@typescript-eslint/parser": "^5.54.1",
     "@vitest/coverage-c8": "^0.29.2",
-    "esbuild": "^0.17.11",
-    "esbuild-register": "^3.4.2",
+    "bs58": "^5.0.0",
+    "eslint": "^8.35.0",
+    "lodash": "^4.17.21",
     "tsup": "^6.6.3",
     "typescript": "^4.9.5",
     "vitest": "^0.29.2"
   },
-  "dependencies": {
-    "bs58": "^5.0.0",
-    "lodash": "^4.17.21"
-  }
+  "exports": {
+    "default": "./dist/index.mjs",
+    "import": "./dist/index.mjs",
+    "node": "./dist/index.js",
+    "require": "./dist/index.js"
+  },
+  "files": [
+    "README.md",
+    "LICENSE",
+    "package.json",
+    "/src",
+    "/dist",
+    "/examples",
+    "/tests"
+  ],
+  "keywords": [
+    "nodejs",
+    "deno",
+    "api",
+    "key",
+    "seam",
+    "seamapi",
+    "token",
+    "security",
+    "random",
+    "hash",
+    "sha256",
+    "base58",
+    "crypto"
+  ],
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "name": "prefixed-api-key",
+  "repository": "git@github.com:seamapi/prefixed-api-key.git",
+  "scripts": {
+    "build": "tsup src/index.ts --clean --format esm,cjs --dts",
+    "clean": "rm -rf dist",
+    "examples:deno": "cd examples/deno && deno run ./index.ts",
+    "examples:nodejs": "cd examples/nodejs && node ./index.cjs",
+    "lint": "eslint \"src/**/*.ts*\"",
+    "package-check": "npx package-check",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest --coverage"
+  },
+  "source": "./src/index.ts",
+  "types": "./dist/index.d.ts",
+  "version": "1.1.0"
 }

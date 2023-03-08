@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { beforeEach, describe, expect, test } from "vitest"
 
 import {
