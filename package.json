@@ -1,4 +1,18 @@
 {
+  "author": {
+    "name": "seam",
+    "url": "https://www.seam.co/"
+  },
+  "bugs": {
+    "url": "https://github.com/seamapi/prefixed-api-key/issues"
+  },
+  "contributors": [
+    {
+      "name": "Glenn Rempe",
+      "url": "https://www.truestamp.com/",
+      "email": "glenn@truestamp.com"
+    }
+  ],
   "description": "Generate seam-style API-keys",
   "devDependencies": {
     "@skypack/package-check": "^0.2.2",
@@ -32,6 +46,7 @@
     "/examples",
     "/tests"
   ],
+  "homepage": "https://github.com/seamapi/prefixed-api-key",
   "keywords": [
     "nodejs",
     "deno",
