@@ -1,35 +1,38 @@
 {
   "author": {
-    "name": "seam",
-    "url": "https://www.seam.co/"
+    "name": "Glenn Rempe",
+    "url": "https://www.truestamp.com/",
+    "email": "glenn@truestamp.com"
   },
   "bugs": {
-    "url": "https://github.com/seamapi/prefixed-api-key/issues"
+    "url": "https://github.com/truestamp/prefixed-api-key/issues"
   },
   "contributors": [
     {
-      "name": "Glenn Rempe",
-      "url": "https://www.truestamp.com/",
-      "email": "glenn@truestamp.com"
+      "name": "seam",
+      "url": "https://www.seam.co/"
     }
   ],
-  "description": "Generate seam-style API-keys",
+  "description": "Create and verify secure prefixed API keys",
   "devDependencies": {
     "@skypack/package-check": "^0.2.2",
-    "@stablelib/constant-time": "^1.0.1",
-    "@stablelib/hex": "^1.0.1",
+    "@stablelib/base64": "^1.0.1",
+    "@stablelib/bytes": "^1.0.1",
+    "@stablelib/hmac": "^1.0.1",
     "@stablelib/random": "^1.0.2",
     "@stablelib/sha256": "^1.0.1",
-    "@types/lodash": "^4.14.191",
-    "@typescript-eslint/eslint-plugin": "^5.54.1",
-    "@typescript-eslint/parser": "^5.54.1",
+    "@stablelib/utf8": "^1.0.1",
+    "@scure/base": "^1.1.1",
+    "@typescript-eslint/eslint-plugin": "^5.55.0",
+    "@typescript-eslint/parser": "^5.55.0",
     "@vitest/coverage-c8": "^0.29.2",
-    "bs58": "^5.0.0",
-    "eslint": "^8.35.0",
-    "lodash": "^4.17.21",
+    "eslint": "^8.36.0",
     "tsup": "^6.6.3",
     "typescript": "^4.9.5",
-    "vitest": "^0.29.2"
+    "ulidx": "^0.5.0",
+    "vitest": "^0.29.2",
+    "zod": "^3.21.4",
+    "zod-validation-error": "^1.0.1"
   },
   "exports": {
     "default": "./dist/index.mjs",
@@ -46,27 +49,27 @@
     "/examples",
     "/tests"
   ],
-  "homepage": "https://github.com/seamapi/prefixed-api-key",
+  "homepage": "https://github.com/truestamp/prefixed-api-key",
   "keywords": [
     "nodejs",
     "deno",
     "api",
     "key",
-    "seam",
-    "seamapi",
     "token",
     "security",
     "random",
     "hash",
     "sha256",
+    "hmac",
     "base58",
+    "base58check",
     "crypto"
   ],
   "license": "MIT",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
-  "name": "prefixed-api-key",
-  "repository": "git@github.com:seamapi/prefixed-api-key.git",
+  "name": "@truestamp/prefixed-api-key",
+  "repository": "git@github.com:truestamp/prefixed-api-key.git",
   "scripts": {
     "bench": "vitest bench",
     "build": "tsup src/index.ts --clean --format esm,cjs --dts",
@@ -75,11 +78,11 @@
     "examples:nodejs": "cd examples/nodejs && node ./index.cjs",
     "lint": "eslint \"src/**/*.ts*\"",
     "package-check": "npx package-check",
-    "test": "vitest run",
+    "test": "vitest --coverage",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest --coverage"
   },
   "source": "./src/index.ts",
   "types": "./dist/index.d.ts",
-  "version": "1.1.0"
+  "version": "2.0.0"
 }

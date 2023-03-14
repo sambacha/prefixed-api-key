@@ -1,353 +1,309 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import { beforeEach, describe, expect, test } from "vitest"
-
-import {
-  APIKey,
-  checkAPIKey,
-  extractLongToken,
-  extractLongTokenHash,
-  extractShortToken,
-  generateAPIKey,
-  getTokenComponents,
-  hashLongToken,
-  parseToken,
-} from "../src/index"
+import { randomBytes } from "@stablelib/random"
+import { isValid } from "ulidx"
+import { beforeEach, describe, expect, test, vi } from "vitest"
+import { createKey, getKeyId, verifyKey } from "../src/index"
 
 declare module "vitest" {
   export interface TestContext {
-    key: APIKey
+    hmacKey: Uint8Array
+    prefix: string
+    createdKey: {
+      key: string
+      server: {
+        id: string
+        verifier: Uint8Array
+        timestamp: Date
+      }
+    }
   }
 }
 
 describe("function", () => {
   beforeEach(async (context) => {
-    context.key = generateAPIKey({ keyPrefix: "my_company" })
+    context.hmacKey = randomBytes(32)
+    context.prefix = "mycompany_key"
+    context.createdKey = createKey({
+      prefix: context.prefix,
+      hmacKey: context.hmacKey,
+    })
   })
 
-  describe("parseToken", () => {
+  describe("createKey", () => {
     test("should return object with key properties", async (context) => {
-      const { key } = context
+      const { createdKey } = context
 
-      const parsedKey = parseToken(key.token)
-
-      expect(parsedKey).not.toBeNull()
-      expect(parsedKey).toHaveProperty("longToken")
-      expect(parsedKey).toHaveProperty("longTokenHash")
-      expect(parsedKey).toHaveProperty("prefix")
-      expect(parsedKey).toHaveProperty("shortToken")
-      expect(parsedKey).toHaveProperty("token")
+      expect(createdKey).not.toBeNull()
+      expect(createdKey).toHaveProperty("key")
+      expect(createdKey.key).toBeTypeOf("string")
+      expect(createdKey).toHaveProperty("server")
+      expect(createdKey.server).toBeInstanceOf(Object)
+      expect(createdKey.server).toHaveProperty("id")
+      expect(createdKey.server.id).toBeTypeOf("string")
+      expect(isValid(createdKey.server.id)).toBeTruthy()
+      expect(createdKey.server).toHaveProperty("timestamp")
+      expect(createdKey.server.timestamp).toBeInstanceOf(Date)
+      expect(createdKey.server).toHaveProperty("verifier")
+      expect(createdKey.server.verifier).toBeInstanceOf(Uint8Array)
     })
 
-    test("should throw if token arg is not a string", async (context) => {
-      expect(
+    test("should accept a normal prefix", async (context) => {
+      const createdKey = createKey({
+        prefix: "a_test_prefix",
+        hmacKey: context.hmacKey,
+      })
+
+      expect(createdKey).not.toBeNull()
+      expect(createdKey).toHaveProperty("key")
+      expect(createdKey.key).toContain("a_test_prefix")
+    })
+
+    test("should throw if prefix is empty", async (context) => {
+      expect(async () =>
+        createKey({ prefix: "", hmacKey: context.hmacKey })
+      ).rejects.toThrowError(
+        'Validation error: Must be a valid prefix (a-z0-9_) at "prefix"'
+      )
+    })
+
+    test("should throw if prefix is not a string", async (context) => {
+      expect(async () => {
         // @ts-expect-error
-        async () => parseToken(undefined)
-      ).rejects.toThrowError("Invalid token : must be a string : undefined")
-    })
-
-    test("should throw if too few segments", async (context) => {
-      const { key } = context
-
-      expect(async () =>
-        parseToken(key.token.replace(/my_company_/g, ""))
-      ).rejects.toThrowError("Invalid token : too few segments : 2")
-    })
-
-    test("should throw if too many segments", async (context) => {
-      const { key } = context
-
-      expect(async () =>
-        parseToken(
-          key.token.replace(
-            /my_company_/g,
-            "foo_bar_baz_qux_abc_123_456_8910_zxc_"
-          )
-        )
-      ).rejects.toThrowError("Invalid token : too many segments : 11")
-    })
-
-    test("should throw if token is not strict Base 58", async (context) => {
-      const { key } = context
-
-      expect(async () =>
-        parseToken(
-          key.token + "!" // add invalid char
-        )
-      ).rejects.toThrowError(
-        "Invalid token : longToken is not a valid base58 string"
+        createKey({ prefix: 123, hmacKey: context.hmacKey })
+      }).rejects.toThrowError(
+        'Validation error: Expected string, received number at "prefix"'
       )
     })
 
-    test("should throw if shortToken contains an invalid character", async (context) => {
-      const { key } = context
-
+    test("should throw if prefix contains an invalid character", async (context) => {
       expect(async () =>
-        parseToken("my_company_BRTR***KFsL_51FwqftsmMDHHbJAMEXXHCgG")
-      ).rejects.toThrowError("Invalid token : shortToken is not a valid string")
+        createKey({ prefix: "foo-bar", hmacKey: context.hmacKey })
+      ).rejects.toThrowError(
+        'Validation error: Must be a valid prefix (a-z0-9_) at "prefix"'
+      )
+    })
+
+    test("should throw if hmacKey too short", async (context) => {
+      expect(async () =>
+        createKey({ prefix: context.prefix, hmacKey: randomBytes(31) })
+      ).rejects.toThrowError(
+        'Validation error: Must be a 32 byte Uint8Array at "hmacKey"'
+      )
+    })
+
+    test("should throw if hmacKey too long", async (context) => {
+      expect(async () =>
+        createKey({ prefix: context.prefix, hmacKey: randomBytes(33) })
+      ).rejects.toThrowError(
+        'Validation error: Must be a 32 byte Uint8Array at "hmacKey"'
+      )
     })
   })
 
-  describe("generateAPIKey", () => {
-    test("should return object with key properties", async (context) => {
-      const { key } = context
-
-      expect(key).not.toBeNull()
-      expect(key).toHaveProperty("longToken")
-      expect(key).toHaveProperty("longTokenHash")
-      expect(key).toHaveProperty("shortToken")
-      expect(key).toHaveProperty("token")
+  describe("getKeyId", () => {
+    test("should extract ID from key", async (context) => {
+      const { createdKey } = context
+      expect(createdKey.key).toContain(`_${getKeyId(createdKey.key)}_`)
     })
 
-    test("should accept and validate keyPrefix arg with chars [a-z0-9_]", async (context) => {
-      const key = generateAPIKey({ keyPrefix: "my_company_1_2_three" })
-
-      expect(key).not.toBeNull()
-      expect(key).toHaveProperty("longToken")
-      expect(key).toHaveProperty("longTokenHash")
-      expect(key).toHaveProperty("shortToken")
-      expect(key).toHaveProperty("token")
-      expect(checkAPIKey(key.token, key.longTokenHash)).toEqual(true)
-    })
-
-    test("should accept and validate shortTokenPrefix arg with chars [a-z0-9]", async (context) => {
-      const key = generateAPIKey({
-        keyPrefix: "my_company",
-        shortTokenPrefix: "myprefix123",
-      })
-
-      expect(key).not.toBeNull()
-      expect(key).toHaveProperty("shortToken")
-      expect(key.shortToken).toMatch(/^myprefix123/)
-      expect(checkAPIKey(key.token, key.longTokenHash)).toEqual(true)
-    })
-
-    test("should accept and validate shortTokenLength arg with 4", async (context) => {
-      const key = generateAPIKey({
-        keyPrefix: "my_company",
-        shortTokenLength: 4,
-      })
-
-      expect(key).not.toBeNull()
-      expect(key).toHaveProperty("shortToken")
-      expect(key.shortToken.length).toEqual(4)
-      expect(checkAPIKey(key.token, key.longTokenHash)).toEqual(true)
-    })
-
-    test("should accept and validate shortTokenLength arg with 24", async (context) => {
-      const key = generateAPIKey({
-        keyPrefix: "my_company",
-        shortTokenLength: 24,
-      })
-
-      expect(key).not.toBeNull()
-      expect(key).toHaveProperty("shortToken")
-      expect(key.shortToken.length).toEqual(24)
-      expect(checkAPIKey(key.token, key.longTokenHash)).toEqual(true)
-    })
-
-    test("should accept and validate longTokenLength arg with 4", async (context) => {
-      const key = generateAPIKey({
-        keyPrefix: "my_company",
-        longTokenLength: 4,
-      })
-
-      expect(key).not.toBeNull()
-      expect(key).toHaveProperty("shortToken")
-      expect(key.longToken.length).toEqual(4)
-      expect(checkAPIKey(key.token, key.longTokenHash)).toEqual(true)
-    })
-
-    test("should accept and validate longTokenLength arg with 24", async (context) => {
-      const key = generateAPIKey({
-        keyPrefix: "my_company",
-        longTokenLength: 24,
-      })
-
-      expect(key).not.toBeNull()
-      expect(key).toHaveProperty("longToken")
-      expect(key.longToken.length).toEqual(24)
-      expect(checkAPIKey(key.token, key.longTokenHash)).toEqual(true)
-    })
-
-    test("should throw if no object arg is provided", async (context) => {
-      // @ts-expect-error
-      expect(async () => generateAPIKey()).rejects.toThrowError(
-        "options object is required"
+    test("should throw if the Key is malformed", async (context) => {
+      expect(async () =>
+        getKeyId(
+          "my_cool_company_01GV6CCP76AG4J23E06E9WP4FN-6Gf7Pnv33XR3VXW54brSqP2bWNtCJu77NE9FudEHF1xSoMwmF" // an underscore was changed to a hyphen
+        )
+      ).rejects.toThrowError(
+        "Validation error: Must use only valid [a-zA-Z0-9_] characters; Must have a valid ULID as the ID"
       )
     })
 
-    test("should throw if keyPrefix arg is missing", async (context) => {
-      // @ts-expect-error
-      expect(async () => generateAPIKey({})).rejects.toThrowError(
-        "keyPrefix is required"
+    test("should throw if the ID embedded in a Key has less than 26 characters", async (context) => {
+      expect(async () =>
+        getKeyId(
+          "mycompany_key_01GV6CCP76AG4J23E06E9WP4F_2FuayFaeu14tHcGFLq8HiWQ8ZGoZo9brEsxZmgvGxaYMKbYGuZ" // the ID portion of this Key was changed to remove a trailing 'N'
+        )
+      ).rejects.toThrowError(
+        "Validation error: Must have a valid ULID as the ID"
       )
     })
 
-    test("should throw if keyPrefix arg is not a string", async (context) => {
+    test("should throw if the ID embedded in a Key has more than 26 characters", async (context) => {
+      expect(async () =>
+        getKeyId(
+          "mycompany_key_01GV6CCP76AG4J23E06E9WP4FNF_2FuayFaeu14tHcGFLq8HiWQ8ZGoZo9brEsxZmgvGxaYMKbYGuZ" // the ID portion of this Key was changed to add an extra 'F'
+        )
+      ).rejects.toThrowError(
+        "Validation error: Must have a valid ULID as the ID"
+      )
+    })
+  })
+
+  describe("verifyKey", () => {
+    test("should return true if verifiers match", async (context) => {
+      const { createdKey } = context
+
       expect(
+        verifyKey({
+          key: createdKey.key,
+          verifier: createdKey.server.verifier,
+          hmacKey: context.hmacKey,
+        })
+      ).toEqual(true)
+    })
+
+    test("should return false if verifiers do not match", async (context) => {
+      const { createdKey } = context
+
+      const invalidVerifier = randomBytes(32)
+
+      expect(
+        verifyKey({
+          key: createdKey.key,
+          verifier: invalidVerifier,
+          hmacKey: context.hmacKey,
+        })
+      ).toEqual(false)
+    })
+
+    test("should throw if key validation error", async (context) => {
+      const { createdKey } = context
+
+      // prettier-ignore
+      expect(async () => {
         // @ts-expect-error
-        async () => generateAPIKey({ keyPrefix: 1 })
-      ).rejects.toThrowError("keyPrefix is required")
-    })
-
-    test("should throw if keyPrefix has an invalid character", async (context) => {
-      expect(async () =>
-        generateAPIKey({ keyPrefix: "foo*bar" })
-      ).rejects.toThrowError("keyPrefix is required")
-    })
-
-    test("should throw if shortTokenPrefix has an invalid character", async (context) => {
-      expect(async () =>
-        generateAPIKey({
-          keyPrefix: "my_company",
-          shortTokenPrefix: "foo*bar",
-        })
-      ).rejects.toThrowError(
-        "shortTokenPrefix must contain no more than 16 lowercase letter or number characters"
+        verifyKey({ key: 123, verifier: createdKey.server.verifier, hmacKey: context.hmacKey })
+      }).rejects.toThrowError(
+        'Validation error: Expected string, received number at "key"'
       )
     })
 
-    test("should throw if shortTokenLength is not a number", async (context) => {
-      // prettier-ignore
-      expect(
-        async () =>
-        // @ts-ignore-error
-        generateAPIKey({ keyPrefix: "my_company", shortTokenLength: "1" })
-      ).rejects.toThrowError(
-        "shortTokenLength must be a number between 4 and 24"
-      )
-    })
+    test("should return true if isAfter < ID", async (context) => {
+      const { createdKey } = context
 
-    test("should throw if shortTokenLength is < 4", async (context) => {
-      expect(async () =>
-        generateAPIKey({
-          keyPrefix: "my_company",
-          shortTokenLength: 3,
-        })
-      ).rejects.toThrowError(
-        "shortTokenLength must be a number between 4 and 24"
-      )
-    })
-
-    test("should throw if shortTokenLength is > 24", async (context) => {
-      expect(async () =>
-        generateAPIKey({
-          keyPrefix: "my_company",
-          shortTokenLength: 25,
-        })
-      ).rejects.toThrowError(
-        "shortTokenLength must be a number between 4 and 24"
-      )
-    })
-
-    test("should throw if longTokenLength is not a number", async (context) => {
-      // prettier-ignore
-      expect(
-        async () =>
-        // @ts-ignore-error
-        generateAPIKey({ keyPrefix: "my_company", longTokenLength: "1" })
-      ).rejects.toThrowError(
-        "longTokenLength must be a number between 4 and 24 : 1"
-      )
-    })
-
-    test("should throw if longTokenLength is < 4", async (context) => {
-      expect(async () =>
-        generateAPIKey({
-          keyPrefix: "my_company",
-          longTokenLength: 3,
-        })
-      ).rejects.toThrowError(
-        "longTokenLength must be a number between 4 and 24 : 3"
-      )
-    })
-
-    test("should throw if longTokenLength is > 24", async (context) => {
-      expect(async () =>
-        generateAPIKey({
-          keyPrefix: "my_company",
-          longTokenLength: 25,
-        })
-      ).rejects.toThrowError(
-        "longTokenLength must be a number between 4 and 24 : 25"
-      )
-    })
-  })
-
-  describe("checkAPIKey", () => {
-    test("should return true if long token hash matches", async (context) => {
-      const { key } = context
-
-      expect(checkAPIKey(key.token, key.longTokenHash)).toEqual(true)
-    })
-
-    test("should throw if long token hash does not match", async (context) => {
-      const { key } = context
-
-      expect(async () => checkAPIKey(key.token, "foo")).rejects.toThrowError(
-        "Invalid expectedLongTokenHash : not a valid hex string : foo"
-      )
-    })
-  })
-
-  describe("extractLongToken", () => {
-    test("should return long token", async (context) => {
-      const { key } = context
-
-      expect(extractLongToken(key.token)).toEqual(key.longToken)
-    })
-  })
-
-  describe("extractLongTokenHash", () => {
-    test("should return long token hash", async (context) => {
-      const { key } = context
-
-      expect(extractLongTokenHash(key.token)).toEqual(key.longTokenHash)
-    })
-  })
-
-  describe("extractShortToken", () => {
-    test("should return short token", async (context) => {
-      const { key } = context
-
-      expect(extractShortToken(key.token)).toEqual(key.shortToken)
-    })
-  })
-
-  describe("getTokenComponents", () => {
-    test("should return object with key components", async (context) => {
-      const { key } = context
-
-      expect(getTokenComponents(key.token)).toEqual(key)
-    })
-
-    test("should return correct components of a known token", async () => {
-      const exampleKey = {
-        shortToken: "BRTRKFsL",
-        longToken: "51FwqftsmMDHHbJAMEXXHCgG",
-        longTokenHash:
-          "d70d981d87b449c107327c2a2afbf00d4b58070d6ba571aac35d7ea3e7c79f37",
-        prefix: "my_company",
-        token: "my_company_BRTRKFsL_51FwqftsmMDHHbJAMEXXHCgG",
-      }
-
-      expect(getTokenComponents(exampleKey.token)).toEqual(exampleKey)
-    })
-  })
-
-  describe("hashLongToken", () => {
-    test("should return hash of long token", async (context) => {
-      const { key } = context
-
-      expect(hashLongToken(key.longToken)).toEqual(key.longTokenHash)
-    })
-
-    test("should throw if longToken contains an invalid character", async (context) => {
-      const { key } = context
+      const pastDate = new Date(Date.now() - 1000)
 
       expect(
-        async () => hashLongToken(key.longToken + "!") // add invalid character
-      ).rejects.toThrowError("Invalid longToken")
+        verifyKey({
+          key: createdKey.key,
+          verifier: createdKey.server.verifier,
+          hmacKey: context.hmacKey,
+          isAfter: pastDate,
+        })
+      ).toEqual(true)
+    })
+
+    test("should return false if ID < isAfter", async (context) => {
+      vi.useFakeTimers()
+      const date = new Date(2023, 1, 1)
+      vi.setSystemTime(date)
+      const createdKey = createKey({
+        prefix: "old_key",
+        hmacKey: context.hmacKey,
+      })
+      vi.useRealTimers()
+
+      expect(
+        verifyKey({
+          key: createdKey.key,
+          verifier: createdKey.server.verifier,
+          hmacKey: context.hmacKey,
+          isAfter: new Date(Date.now() - 1_000), // one second ago
+        })
+      ).toEqual(false)
+    })
+
+    test("should return true if ID < isBefore", async (context) => {
+      const { createdKey } = context
+
+      const futureDate = new Date(Date.now() + 1000)
+
+      expect(
+        verifyKey({
+          key: createdKey.key,
+          verifier: createdKey.server.verifier,
+          hmacKey: context.hmacKey,
+          isBefore: futureDate,
+        })
+      ).toEqual(true)
+    })
+
+    test("should return true if isAfter < ID < isBefore", async (context) => {
+      const hmacKey = randomBytes(32)
+      const isAfter = new Date(2023, 1, 1)
+
+      vi.useFakeTimers()
+      const fakeDate = new Date(2023, 6, 1)
+      vi.setSystemTime(fakeDate)
+      // will be created with a ULID linked to fakeDate
+      const createdKey = createKey({ prefix: "old_key", hmacKey: hmacKey })
+      vi.useRealTimers()
+
+      expect(
+        verifyKey({
+          key: createdKey.key,
+          verifier: createdKey.server.verifier,
+          hmacKey: hmacKey,
+          isAfter: isAfter,
+          isBefore: new Date(2023, 12, 31),
+        })
+      ).toEqual(true)
+    })
+
+    test("should return false if isAfter < isBefore < ID", async (context) => {
+      const { createdKey } = context
+
+      const pastDate = new Date(Date.now() - 10_000)
+      const largerPastDate = new Date(Date.now() - 9_000)
+
+      expect(
+        verifyKey({
+          key: createdKey.key,
+          verifier: createdKey.server.verifier,
+          hmacKey: context.hmacKey,
+          isAfter: pastDate,
+          isBefore: largerPastDate,
+        })
+      ).toEqual(false)
+    })
+
+    test("should return false if ID < isAfter < isBefore", async (context) => {
+      vi.useFakeTimers()
+      const fakeDate = new Date(2023, 1, 1)
+      vi.setSystemTime(fakeDate)
+      // will be created with a ULID linked to fakeDate
+      const createdKey = createKey({
+        prefix: "old_key",
+        hmacKey: context.hmacKey,
+      })
+      vi.useRealTimers()
+
+      const isAfterDate = new Date(Date.now() - 2_000)
+      const isBeforeDate = new Date(Date.now() - 1_000)
+
+      expect(
+        verifyKey({
+          key: createdKey.key,
+          verifier: createdKey.server.verifier,
+          hmacKey: context.hmacKey,
+          isAfter: isAfterDate,
+          isBefore: isBeforeDate,
+        })
+      ).toEqual(false)
+    })
+
+    test("should throw if isAfter > isBefore", async (context) => {
+      const { createdKey } = context
+
+      expect(async () => {
+        verifyKey({
+          key: createdKey.key,
+          verifier: createdKey.server.verifier,
+          hmacKey: context.hmacKey,
+          isAfter: new Date(Date.now() - 1_000),
+          isBefore: new Date(Date.now() - 2_000),
+        })
+      }).rejects.toThrowError(
+        "Validation error: isAfter must be before isBefore"
+      )
     })
   })
 })
