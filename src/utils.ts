@@ -38,9 +38,11 @@ export function getKeyComponents(key: string): {
     throw new Error("Invalid key")
   }
 
-  const prefix = splitKey[1]
-  const id = splitKey[2]
-  const secret = splitKey[3]
+  const prefix = splitKey[1] as Prefix
+  const id = splitKey[2] as Id
+  const secret = splitKey[3] as string
 
   return { prefix, id, secret }
+
+  
 }

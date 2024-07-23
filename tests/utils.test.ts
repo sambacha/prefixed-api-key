@@ -58,6 +58,27 @@ describe("function", () => {
       expect(secret).toBe(testSecret)
     })
 
+    describe('getKeyComponents', () => {
+
+      // Correctly splits a valid key into prefix, id, and secret
+      it('should correctly split a valid key into prefix, id, and secret', () => {
+        const key = "prefix_id_secret";
+        const result = getKeyComponents(key);
+        expect(result).toEqual({
+          prefix: "prefix",
+          id: "id",
+          secret: "secret"
+        });
+      });
+  
+      // Throws an error for keys with fewer than three segments
+      it('should throw an error when key has fewer than three segments', () => {
+        const key = "prefix_id";
+        expect(() => getKeyComponents(key)).toThrow("Invalid key");
+      });
+  });
+  
+
     test("should throw if key has too few parts", async (context) => {
       expect(async () => {
         getKeyComponents(
