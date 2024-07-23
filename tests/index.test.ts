@@ -2,7 +2,7 @@
 import { randomBytes } from "@stablelib/random"
 import { isValid } from "ulidx"
 import { beforeEach, describe, expect, test, vi } from "vitest"
-import { createKey, getKeyId, verifyKey } from "../src/index"
+import { createKey, getKeyId, verifyKey } from "../src/index.js"
 
 declare module "vitest" {
   export interface TestContext {

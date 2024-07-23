@@ -1,6 +1,6 @@
 import { HMAC } from "@stablelib/hmac"
 import { SHA256 } from "@stablelib/sha256"
-import { Id, Prefix } from "./types"
+import { Id, Prefix } from "./types.js"
 
 /**
  *  HMAC-SHA256(key, id || secret)

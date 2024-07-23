@@ -3,8 +3,8 @@ import { HMAC } from "@stablelib/hmac"
 import { randomBytes } from "@stablelib/random"
 import { SHA256 } from "@stablelib/sha256"
 import { beforeEach, describe, expect, test } from "vitest"
-import { createKey } from "../src/index"
-import { getKeyComponents, hmacSecret } from "../src/utils"
+import { createKey } from "../src/index.js"
+import { getKeyComponents, hmacSecret } from "../src/utils.js"
 
 declare module "vitest" {
   export interface TestContext {
