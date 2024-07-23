@@ -2,7 +2,7 @@ import { base58check } from "@scure/base"
 import { randomBytes } from "@stablelib/random"
 import { hash } from "@stablelib/sha256"
 import { bench } from "vitest"
-import { createKey, getKeyId, verifyKey } from "../src/index"
+import { createKey, getKeyId, verifyKey } from "../src/index.js"
 
 const hmacKey = randomBytes(32)
 
