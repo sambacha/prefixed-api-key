@@ -23,6 +23,7 @@
     "@stablelib/random": "^2.0.0",
     "@stablelib/sha256": "^2.0.0",
     "@stablelib/utf8": "^2.0.0",
+    "@swc/core": "^1.7.0",
     "@types/jest": "^29.5.12",
     "@typescript-eslint/eslint-plugin": "^7.17.0",
     "@typescript-eslint/parser": "^7.17.0",
