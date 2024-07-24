@@ -22,9 +22,18 @@
     "incremental": true,
     "declaration": true,
     "sourceMap": false,
-    "moduleResolution": "nodenext",
+   // "moduleResolution": "nodenext",
     "moduleDetection": "auto",
-    "module": "NodeNext",
+    "module": "CommonJS",
     "target": "ESNext",
-  }
+  },
+  "include": [
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "**/node_modules",
+    "**/.*/",
+    "src/**/*.test.ts",
+     "test/**/*.test.ts"
+  ]
 }
