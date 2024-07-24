@@ -1,6 +1,6 @@
-import { HMAC } from "@stablelib/hmac"
-import { SHA256 } from "@stablelib/sha256"
-import { Id, Prefix } from "./types.js"
+import { HMAC } from '@stablelib/hmac';
+import { SHA256 } from '@stablelib/sha256';
+import { Id, Prefix } from './types.js';
 
 /**
  *  HMAC-SHA256(key, id || secret)
@@ -9,13 +9,10 @@ import { Id, Prefix } from "./types.js"
  * @param hmacKey 32 Byte Uint8Array
  * @returns Uint8Array of length 32
  */
-export function hmacSecret(
-  secret: Uint8Array,
-  hmacKey: Uint8Array
-): Uint8Array {
-  const h = new HMAC(SHA256, hmacKey)
-  h.update(secret)
-  return h.digest()
+export function hmacSecret(secret: Uint8Array, hmacKey: Uint8Array): Uint8Array {
+  const h = new HMAC(SHA256, hmacKey);
+  h.update(secret);
+  return h.digest();
 }
 
 /**
@@ -29,20 +26,18 @@ export function hmacSecret(
  * @throws Error if the key is invalid
  * */
 export function getKeyComponents(key: string): {
-  prefix: Prefix
-  id: Id
-  secret: string
+  prefix: Prefix;
+  id: Id;
+  secret: string;
 } {
-  const splitKey = key.match(/(.*)_(.*)_(.*)/)
+  const splitKey = key.match(/(.*)_(.*)_(.*)/);
   if (!splitKey || splitKey.length !== 4) {
-    throw new Error("Invalid key")
+    throw new Error('Invalid key');
   }
 
-  const prefix = splitKey[1] as Prefix
-  const id = splitKey[2] as Id
-  const secret = splitKey[3] as string
+  const prefix = splitKey[1] as Prefix;
+  const id = splitKey[2] as Id;
+  const secret = splitKey[3] as string;
 
-  return { prefix, id, secret }
-
-  
+  return { prefix, id, secret };
 }

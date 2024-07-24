@@ -1,11 +1,11 @@
-import { base58check } from "@scure/base"
-import { concat } from "@stablelib/bytes"
-import { equal } from "@stablelib/hmac"
-import { randomBytes } from "@stablelib/random"
-import { hash } from "@stablelib/sha256"
-import { encode } from "@stablelib/utf8"
-import { decodeTime, ulid } from "ulidx"
-import { fromZodError } from "zod-validation-error"
+import { base58check } from '@scure/base';
+import { concat } from '@stablelib/bytes';
+import { equal } from '@stablelib/hmac';
+import { randomBytes } from '@stablelib/random';
+import { hash } from '@stablelib/sha256';
+import { encode } from '@stablelib/utf8';
+import { decodeTime, ulid } from 'ulidx';
+import { fromZodError } from 'zod-validation-error';
 
 import {
   CreateOptions,
@@ -14,9 +14,9 @@ import {
   KeySchema,
   VerifyOptions,
   VerifyOptionsSchema,
-} from "./types.js"
+} from './types.js';
 
-import { getKeyComponents, hmacSecret } from "./utils.js"
+import { getKeyComponents, hmacSecret } from './utils.js';
 /**
  * Create a new API key.
  * @param options - Options to create a new API key
@@ -26,41 +26,41 @@ import { getKeyComponents, hmacSecret } from "./utils.js"
  * @throws Error if the options are invalid
  */
 export function createKey(options: CreateOptions): {
-  key: string
+  key: string;
   server: {
-    id: string
-    verifier: Uint8Array
-    timestamp: Date
-  }
+    id: string;
+    verifier: Uint8Array;
+    timestamp: Date;
+  };
 } {
-  const createOptions = CreateOptionsSchema.safeParse(options)
+  const createOptions = CreateOptionsSchema.safeParse(options);
   if (!createOptions.success) {
-    const zodValidationError = fromZodError(createOptions.error)
-    throw new Error(zodValidationError.message, { cause: createOptions.error })
+    const zodValidationError = fromZodError(createOptions.error);
+    throw new Error(zodValidationError.message, { cause: createOptions.error });
   }
 
-  const { prefix, hmacKey } = createOptions.data
+  const { prefix, hmacKey } = createOptions.data;
 
   // Generate a ULID to serve as a random ID. Both the client and server will know this.
-  const id = ulid()
-  const idBytes = encode(id)
+  const id = ulid();
+  const idBytes = encode(id);
 
   // Generate a random 32 byte secret. Only the client knows this.
-  const secret = randomBytes(32)
-  const secretBase58 = base58check(hash).encode(secret)
+  const secret = randomBytes(32);
+  const secretBase58 = base58check(hash).encode(secret);
 
   // Generate a verifier. This is either the HMAC-SHA256 of the ID and secret,
   // or the SHA-256 of the ID and secret. Both constructions bind the ID and
   // secret together by concatenating them. The HMAC construction also binds
   // the HMAC key to the ID and secret. The HMAC key is only known to the server.
-  const verifier = hmacSecret(concat(idBytes, secret), hmacKey)
+  const verifier = hmacSecret(concat(idBytes, secret), hmacKey);
 
   // Extract the timestamp from the ID ULID. This is the time that the key was created.
   // It is provided as a convenience so the createdAt date can be stored in a DB and
   // will match the timestamp in the key ID.
-  const timestamp = new Date(decodeTime(id))
+  const timestamp = new Date(decodeTime(id));
 
-  const key = `${prefix}_${id}_${secretBase58}`
+  const key = `${prefix}_${id}_${secretBase58}`;
 
   // Construct the response object so it is clear which parts are for the client
   // and which are for the server to receive.
@@ -71,7 +71,7 @@ export function createKey(options: CreateOptions): {
       verifier,
       timestamp,
     },
-  }
+  };
 }
 
 /**
@@ -81,15 +81,15 @@ export function createKey(options: CreateOptions): {
  * @throws Error if the key is invalid
  */
 export function getKeyId(key: Key): string {
-  const parsedKey = KeySchema.safeParse(key)
+  const parsedKey = KeySchema.safeParse(key);
   if (!parsedKey.success) {
-    const zodValidationError = fromZodError(parsedKey.error)
-    throw new Error(zodValidationError.message, { cause: parsedKey.error })
+    const zodValidationError = fromZodError(parsedKey.error);
+    throw new Error(zodValidationError.message, { cause: parsedKey.error });
   }
 
-  const { id } = getKeyComponents(key)
+  const { id } = getKeyComponents(key);
 
-  return id
+  return id;
 }
 
 /**
@@ -105,31 +105,31 @@ export function getKeyId(key: Key): string {
  * @throws Error if the options are invalid
  */
 export function verifyKey(options: VerifyOptions): boolean {
-  const verifyOptions = VerifyOptionsSchema.safeParse(options)
+  const verifyOptions = VerifyOptionsSchema.safeParse(options);
   if (!verifyOptions.success) {
-    const zodValidationError = fromZodError(verifyOptions.error)
-    throw new Error(zodValidationError.message, { cause: verifyOptions.error })
+    const zodValidationError = fromZodError(verifyOptions.error);
+    throw new Error(zodValidationError.message, { cause: verifyOptions.error });
   }
 
-  const { hmacKey, isAfter, isBefore, key, verifier } = verifyOptions.data
+  const { hmacKey, isAfter, isBefore, key, verifier } = verifyOptions.data;
 
-  const { id, secret } = getKeyComponents(key)
+  const { id, secret } = getKeyComponents(key);
 
-  const idTimestamp = decodeTime(id)
+  const idTimestamp = decodeTime(id);
 
   if (isAfter && idTimestamp < isAfter.getTime()) {
-    return false
+    return false;
   }
 
   if (isBefore && idTimestamp > isBefore.getTime()) {
-    return false
+    return false;
   }
 
-  const idBytes = encode(id)
-  const secretBytes = base58check(hash).decode(secret)
+  const idBytes = encode(id);
+  const secretBytes = base58check(hash).decode(secret);
 
-  const newVerifier = hmacSecret(concat(idBytes, secretBytes), hmacKey)
+  const newVerifier = hmacSecret(concat(idBytes, secretBytes), hmacKey);
 
   // constant-time comparison
-  return equal(newVerifier, verifier)
+  return equal(newVerifier, verifier);
 }
