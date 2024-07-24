@@ -14,9 +14,9 @@ import {
   KeySchema,
   VerifyOptions,
   VerifyOptionsSchema,
-} from "./types"
+} from "./types.js"
 
-import { getKeyComponents, hmacSecret } from "./utils"
+import { getKeyComponents, hmacSecret } from "./utils.js"
 /**
  * Create a new API key.
  * @param options - Options to create a new API key
@@ -36,7 +36,7 @@ export function createKey(options: CreateOptions): {
   const createOptions = CreateOptionsSchema.safeParse(options)
   if (!createOptions.success) {
     const zodValidationError = fromZodError(createOptions.error)
-    throw new Error(zodValidationError.message)
+    throw new Error(zodValidationError.message, { cause: createOptions.error })
   }
 
   const { prefix, hmacKey } = createOptions.data
@@ -84,7 +84,7 @@ export function getKeyId(key: Key): string {
   const parsedKey = KeySchema.safeParse(key)
   if (!parsedKey.success) {
     const zodValidationError = fromZodError(parsedKey.error)
-    throw new Error(zodValidationError.message)
+    throw new Error(zodValidationError.message, { cause: parsedKey.error })
   }
 
   const { id } = getKeyComponents(key)
@@ -108,7 +108,7 @@ export function verifyKey(options: VerifyOptions): boolean {
   const verifyOptions = VerifyOptionsSchema.safeParse(options)
   if (!verifyOptions.success) {
     const zodValidationError = fromZodError(verifyOptions.error)
-    throw new Error(zodValidationError.message)
+    throw new Error(zodValidationError.message, { cause: verifyOptions.error })
   }
 
   const { hmacKey, isAfter, isBefore, key, verifier } = verifyOptions.data

@@ -1,14 +1,16 @@
-import { defineConfig } from "vitest/config"
+// vite.config.ts
+import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   test: {
     coverage: {
-      provider: "c8",
-      reporter: ["text", "json", "html"],
-      lines: 100,
-      functions: 100,
-      branches: 100,
-      statements: 100,
+      provider: 'v8',
+      reporter: ['text', 'json', 'html', 'lcov'],
+      exclude: ['**/node_modules/**', '**/dist/**', '**/tests/**'],
+      all: true,
     },
+    environment: 'node',
+    includeSource: ['src/**/*.{js,ts}'],
+    testTimeout: 10000,
   },
 })

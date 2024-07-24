@@ -2,10 +2,14 @@ import { base58check } from "@scure/base"
 import { hash } from "@stablelib/sha256"
 import { isValid } from "ulidx"
 import { z } from "zod"
+// const { hash } = require("@stablelib/sha256")import { isValid } from "ulidx"
+
 
 // Base32 Alphabet
-// "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
-// See : https://www.npmjs.com/package/base-x
+// "0123456789ABCDEFGHJKMNPQRSTVWXYZ" - 
+// "abcdefghkmnpqrstuvwxyz0123456789" - apple
+// "ybndrfg8ejkmcpqxot1uwisza345h769" - z-base-32)
+// See : https://www.npmjs.com/package/base-x {@note NOT RFC3548 compliant}
 const BASE_32_REGEX = /^[0-9ABCDEFGHJKMNPQRSTVWXYZ]+$/i
 
 const PREFIX_REGEX = /^[a-z0-9]{1,16}(_[a-z0-9]{1,16}){0,2}$/
@@ -92,7 +96,7 @@ export const KeySchema = z
     (value) => {
       const splitKey = value.split("_")
       const id = splitKey[splitKey.length - 2]
-      return isValid(id)
+      return id !== undefined && isValid(id)
     },
     {
       message: "Must have a valid ULID as the ID",
@@ -103,6 +107,9 @@ export const KeySchema = z
       try {
         const splitKey = value.split("_")
         const secret = splitKey[splitKey.length - 1]
+        if (secret === undefined) {
+          return false; // or throw an error, depending on your requirements
+        }
         const decoded = base58check(hash).decode(secret)
         return decoded.length === 32
       } catch (error) {

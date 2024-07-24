@@ -3,8 +3,8 @@ import { HMAC } from "@stablelib/hmac"
 import { randomBytes } from "@stablelib/random"
 import { SHA256 } from "@stablelib/sha256"
 import { beforeEach, describe, expect, test } from "vitest"
-import { createKey } from "../src/index"
-import { getKeyComponents, hmacSecret } from "../src/utils"
+import { createKey } from "../src/index.js"
+import { getKeyComponents, hmacSecret } from "../src/utils.js"
 
 declare module "vitest" {
   export interface TestContext {
@@ -57,6 +57,27 @@ describe("function", () => {
       expect(id).toBe(testId)
       expect(secret).toBe(testSecret)
     })
+
+    describe('getKeyComponents', () => {
+
+      // Correctly splits a valid key into prefix, id, and secret
+      it('should correctly split a valid key into prefix, id, and secret', () => {
+        const key = "prefix_id_secret";
+        const result = getKeyComponents(key);
+        expect(result).toEqual({
+          prefix: "prefix",
+          id: "id",
+          secret: "secret"
+        });
+      });
+  
+      // Throws an error for keys with fewer than three segments
+      it('should throw an error when key has fewer than three segments', () => {
+        const key = "prefix_id";
+        expect(() => getKeyComponents(key)).toThrow("Invalid key");
+      });
+  });
+  
 
     test("should throw if key has too few parts", async (context) => {
       expect(async () => {

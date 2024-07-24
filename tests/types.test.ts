@@ -4,14 +4,14 @@ import { randomBytes } from "@stablelib/random"
 import { hash } from "@stablelib/sha256"
 import { ulid } from "ulidx"
 import { beforeEach, describe, expect, test } from "vitest"
-import { createKey } from "../src/index"
+import { createKey } from "../src/index.js"
 import {
   HmacKeySchema,
   IdSchema,
   KeySchema,
   PrefixSchema,
   VerifierSchema,
-} from "../src/types"
+} from "../src/types.js"
 
 declare module "vitest" {
   export interface TestContext {
