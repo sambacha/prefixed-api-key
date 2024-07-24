@@ -1,18 +1,17 @@
-import { base58check } from "@scure/base"
-import { hash } from "@stablelib/sha256"
-import { isValid } from "ulidx"
-import { z } from "zod"
+import { base58check } from '@scure/base';
+import { hash } from '@stablelib/sha256';
+import { isValid } from 'ulidx';
+import { z } from 'zod';
 // const { hash } = require("@stablelib/sha256")import { isValid } from "ulidx"
 
-
 // Base32 Alphabet
-// "0123456789ABCDEFGHJKMNPQRSTVWXYZ" - 
+// "0123456789ABCDEFGHJKMNPQRSTVWXYZ" -
 // "abcdefghkmnpqrstuvwxyz0123456789" - apple
 // "ybndrfg8ejkmcpqxot1uwisza345h769" - z-base-32)
 // See : https://www.npmjs.com/package/base-x {@note NOT RFC3548 compliant}
-const BASE_32_REGEX = /^[0-9ABCDEFGHJKMNPQRSTVWXYZ]+$/i
+const BASE_32_REGEX = /^[0-9ABCDEFGHJKMNPQRSTVWXYZ]+$/i;
 
-const PREFIX_REGEX = /^[a-z0-9]{1,16}(_[a-z0-9]{1,16}){0,2}$/
+const PREFIX_REGEX = /^[a-z0-9]{1,16}(_[a-z0-9]{1,16}){0,2}$/;
 // What does this regex do?
 //
 // ^ - start of string
@@ -21,116 +20,116 @@ const PREFIX_REGEX = /^[a-z0-9]{1,16}(_[a-z0-9]{1,16}){0,2}$/
 // $ - end of string
 
 export const PrefixSchema = z.string().regex(PREFIX_REGEX, {
-  message: "Must be a valid prefix (a-z0-9_)",
-})
+  message: 'Must be a valid prefix (a-z0-9_)',
+});
 
-export type Prefix = z.infer<typeof PrefixSchema>
+export type Prefix = z.infer<typeof PrefixSchema>;
 
 export const IdSchema = z.string().regex(BASE_32_REGEX, {
-  message: "Must be a valid Base32 (Crockford) encoded string",
-})
+  message: 'Must be a valid Base32 (Crockford) encoded string',
+});
 
-export type Id = z.infer<typeof IdSchema>
+export type Id = z.infer<typeof IdSchema>;
 
 // 32 Byte Verifier
 export const VerifierSchema = z.instanceof(Uint8Array).refine(
   (value) => {
-    return value.length === 32
+    return value.length === 32;
   },
   {
-    message: "Must be a 32 byte Uint8Array",
-  }
-)
+    message: 'Must be a 32 byte Uint8Array',
+  },
+);
 
-export type Verifier = z.infer<typeof VerifierSchema>
+export type Verifier = z.infer<typeof VerifierSchema>;
 
 // 32 Byte HMAC Key
 // See : https://crypto.stackexchange.com/questions/34864/key-size-for-hmac-sha256
 export const HmacKeySchema = z.instanceof(Uint8Array).refine(
   (value) => {
-    return value.length === 32
+    return value.length === 32;
   },
   {
-    message: "Must be a 32 byte Uint8Array",
-  }
-)
+    message: 'Must be a 32 byte Uint8Array',
+  },
+);
 
-export type HmacKey = z.infer<typeof HmacKeySchema>
+export type HmacKey = z.infer<typeof HmacKeySchema>;
 
 export const KeySchema = z
   .string()
   .refine(
     (value) => {
       // test the whole key to make sure it only contains valid characters
-      const regex = /^[a-zA-Z0-9_]+$/
-      return regex.test(value)
+      const regex = /^[a-zA-Z0-9_]+$/;
+      return regex.test(value);
     },
     {
-      message: "Must use only valid [a-zA-Z0-9_] characters",
-    }
+      message: 'Must use only valid [a-zA-Z0-9_] characters',
+    },
   )
   .refine(
     (value) => {
-      const splitKey = value.split("_")
+      const splitKey = value.split('_');
       if (splitKey.length < 3 || splitKey.length > 8) {
-        return false
+        return false;
       }
-      return true
+      return true;
     },
     {
-      message: "Must have at least 3 parts and at most 5 parts, separated by _",
-    }
+      message: 'Must have at least 3 parts and at most 5 parts, separated by _',
+    },
   )
   .refine(
     (value) => {
       // test the beginning of the key
-      const prefixRegex = /^[a-z0-9]{1,16}(_[a-z0-9]{1,16}){0,2}_/
-      return prefixRegex.test(value)
+      const prefixRegex = /^[a-z0-9]{1,16}(_[a-z0-9]{1,16}){0,2}_/;
+      return prefixRegex.test(value);
     },
     {
       message:
         "Must have a valid prefix with between 1 and 3 character groups separated with '_', each with minimum 1 and maximum 16 [a-z0-9] characters",
-    }
+    },
   )
   .refine(
     (value) => {
-      const splitKey = value.split("_")
-      const id = splitKey[splitKey.length - 2]
-      return id !== undefined && isValid(id)
+      const splitKey = value.split('_');
+      const id = splitKey[splitKey.length - 2];
+      return id !== undefined && isValid(id);
     },
     {
-      message: "Must have a valid ULID as the ID",
-    }
+      message: 'Must have a valid ULID as the ID',
+    },
   )
   .refine(
     (value) => {
       try {
-        const splitKey = value.split("_")
-        const secret = splitKey[splitKey.length - 1]
+        const splitKey = value.split('_');
+        const secret = splitKey[splitKey.length - 1];
         if (secret === undefined) {
           return false; // or throw an error, depending on your requirements
         }
-        const decoded = base58check(hash).decode(secret)
-        return decoded.length === 32
+        const decoded = base58check(hash).decode(secret);
+        return decoded.length === 32;
       } catch (error) {
-        return false
+        return false;
       }
     },
     {
-      message: "Must have a valid 32 byte Base58Check encoded secret",
-    }
-  )
+      message: 'Must have a valid 32 byte Base58Check encoded secret',
+    },
+  );
 
-export type Key = z.infer<typeof KeySchema>
+export type Key = z.infer<typeof KeySchema>;
 
 export const CreateOptionsSchema = z
   .object({
     hmacKey: HmacKeySchema,
     prefix: PrefixSchema,
   })
-  .strict()
+  .strict();
 
-export type CreateOptions = z.infer<typeof CreateOptionsSchema>
+export type CreateOptions = z.infer<typeof CreateOptionsSchema>;
 
 export const VerifyOptionsSchema = z
   .object({
@@ -144,25 +143,25 @@ export const VerifyOptionsSchema = z
   .refine(
     (value) => {
       if (value.isAfter && value.isBefore) {
-        return value.isAfter < value.isBefore
+        return value.isAfter < value.isBefore;
       }
-      return true
+      return true;
     },
     {
-      message: "isAfter must be before isBefore",
-    }
+      message: 'isAfter must be before isBefore',
+    },
   )
   .refine(
     (value) => {
       if (value.isAfter) {
-        const now = new Date()
-        return value.isAfter < now
+        const now = new Date();
+        return value.isAfter < now;
       }
-      return true
+      return true;
     },
     {
-      message: "isAfter must be in the past",
-    }
-  )
+      message: 'isAfter must be in the past',
+    },
+  );
 
-export type VerifyOptions = z.infer<typeof VerifyOptionsSchema>
+export type VerifyOptions = z.infer<typeof VerifyOptionsSchema>;
